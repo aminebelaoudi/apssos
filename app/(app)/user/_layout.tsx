@@ -46,6 +46,16 @@ export default function UserLayout() {
         }}
       />
       <Tabs.Screen
+        name="chatbot"
+        options={{
+          title: 'Assistant',
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="comments" size={24} color={color} />
+          ),
+          headerTitle: 'Assistant d\'urgence',
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
