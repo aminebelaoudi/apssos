@@ -63,7 +63,7 @@ export default function DriverRoute() {
         longitude: location.coords.longitude,
       });
 
-      // Obtenir l'itinéraire depuis l'API Google Maps Directions
+      // Obtenir l'itinéraire depuis l'API Mapbox Directions
       const route = await fetchRoute(
         location.coords.latitude,
         location.coords.longitude,
@@ -97,26 +97,34 @@ export default function DriverRoute() {
     endLng: number
   ) => {
     try {
-      // REMARQUE: Remplacez YOUR_GOOGLE_MAPS_API_KEY par votre véritable clé API Google Maps
-      // Vous pouvez obtenir une clé API sur: https://console.cloud.google.com/google/maps-apis/
-      const GOOGLE_MAPS_API_KEY = 'AIzaSyDV4xXkdKt0aEe7CYkxCSy1r7ogXrbFDFE';
+      // REMARQUE: Remplacez YOUR_MAPBOX_ACCESS_TOKEN par votre véritable token d'accès Mapbox
+      // Vous pouvez obtenir un token sur: https://account.mapbox.com/
+      const MAPBOX_ACCESS_TOKEN = 'sk.eyJ1IjoiYW1pbmViZWxhb3VkaSIsImEiOiJjbTlkNmxtazgwcWx2MmtzYTN4cTBkcWltIn0.tLgi6WQP5Br5IvExz1pA7A';
       
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${startLat},${startLng}&destination=${endLat},${endLng}&mode=driving&key=${GOOGLE_MAPS_API_KEY}`
-      );
+      // Construire l'URL pour l'API Mapbox Directions
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&overview=full&access_token=${MAPBOX_ACCESS_TOKEN}`;
+      
+      const response = await fetch(url);
       const data = await response.json();
 
-      if (data.status !== 'OK') {
+      if (data.code !== 'Ok') {
         throw new Error('Impossible de calculer l\'itinéraire');
       }
 
       // Extraire les coordonnées de l'itinéraire
-      const points = decodePolyline(data.routes[0].overview_polyline.points);
-      const distance = data.routes[0].legs[0].distance.value / 1000; // Convertir en kilomètres
-      const duration = Math.round(data.routes[0].legs[0].duration.value / 60); // Convertir en minutes
+      const coordinates = data.routes[0].geometry.coordinates.map((coord: number[]) => ({
+        longitude: coord[0],
+        latitude: coord[1]
+      }));
+      
+      // Convertir la distance en kilomètres
+      const distance = data.routes[0].distance / 1000;
+      
+      // Convertir la durée en minutes
+      const duration = Math.round(data.routes[0].duration / 60);
 
       return {
-        coordinates: points,
+        coordinates,
         distance,
         duration,
       };
@@ -124,48 +132,6 @@ export default function DriverRoute() {
       console.error('Erreur lors de la récupération de l\'itinéraire:', error);
       throw error;
     }
-  };
-
-  // Fonction pour décoder le polyline de Google Maps
-  const decodePolyline = (encoded: string) => {
-    const points: Array<{ latitude: number; longitude: number }> = [];
-    let index = 0;
-    const len = encoded.length;
-    let lat = 0;
-    let lng = 0;
-
-    while (index < len) {
-      let shift = 0;
-      let result = 0;
-
-      do {
-        const b = encoded.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (result >= 0x20);
-
-      const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-
-      do {
-        const b = encoded.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (result >= 0x20);
-
-      const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
-
-      points.push({
-        latitude: lat * 1e-5,
-        longitude: lng * 1e-5,
-      });
-    }
-
-    return points;
   };
 
   const startLocationUpdates = () => {

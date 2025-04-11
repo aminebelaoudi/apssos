@@ -161,7 +161,10 @@ export default function DriverRequests() {
       }
 
       // Rediriger vers la page d'itinéraire
-      router.push(`/driver/route?requestId=${request.id}`);
+      router.push({
+        pathname: "/driver/route",
+        params: { requestId: request.id }
+      });
     } catch (error) {
       console.error('Erreur:', error);
       Alert.alert('Erreur', 'Une erreur est survenue lors de l\'acceptation de la demande');

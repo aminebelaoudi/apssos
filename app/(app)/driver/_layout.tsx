@@ -82,6 +82,13 @@ export default function DriverLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="route"
+        options={{
+          href: null,
+          headerTitle: 'Itinéraire',
+        }}
+      />
     </Tabs>
   );
 } 
